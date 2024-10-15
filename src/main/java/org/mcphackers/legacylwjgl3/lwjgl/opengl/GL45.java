@@ -102,4 +102,32 @@ public class GL45 {
     public static int glGetNamedRenderbufferParameter(int buffer, int pname) {
         return org.lwjgl.opengl.GL45.glGetNamedRenderbufferParameteri(buffer, pname);
     }
+
+    public static void glGetnUniform(int program, int location, FloatBuffer params) {
+        org.lwjgl.opengl.GL45.glGetnUniformfv(program, location, params);
+    }
+
+    public static void glGetnUniform(int program, int location, IntBuffer params) {
+        org.lwjgl.opengl.GL45.glGetnUniformiv(program, location, params);
+    }
+
+    public static void glGetnUniformu(int program, int location, IntBuffer params) {
+        org.lwjgl.opengl.GL45.glGetnUniformuiv(program, location, params);
+    }
+    
+    public static void glGetVertexArray(int vaobj, int pname, IntBuffer param) {
+        org.lwjgl.opengl.GL45.glGetVertexArrayiv(vaobj, pname, param);
+    }
+    
+    public static int glGetVertexArray(int vaobj, int pname) {
+        return org.lwjgl.opengl.GL45.glGetVertexArrayi(vaobj, pname);
+    }
+    
+    public static void glGetVertexArrayIndexed(int vaobj, int index, int pname, IntBuffer param) {
+        org.lwjgl.opengl.GL45.glGetVertexArrayIndexediv(vaobj, index, pname, param);
+    }
+    
+    public static int glGetVertexArrayIndexed(int vaobj, int index, int pname) {
+        return org.lwjgl.opengl.GL45.glGetVertexArrayIndexedi(vaobj, index, pname);
+    }
 }

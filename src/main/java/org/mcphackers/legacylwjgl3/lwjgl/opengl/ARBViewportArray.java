@@ -4,9 +4,6 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
-import org.lwjgl.opengl.GL41C;
-import org.lwjgl.system.NativeType;
-
 public class ARBViewportArray {
     public static void glViewportArray(int first, FloatBuffer v) {
         org.lwjgl.opengl.ARBViewportArray.glViewportArrayv(first, v);

@@ -308,6 +308,10 @@ public class LWJGLUtil {
 		}
 	}
 
+	public static String toHexString(final int value) {
+		return "0x" + Integer.toHexString(value).toUpperCase();
+	}
+
 	private static String getPrivilegedProperty(final String property_name) {
 		return AccessController.doPrivileged(new PrivilegedAction<String>() {
 			public String run() {

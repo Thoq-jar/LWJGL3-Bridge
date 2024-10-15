@@ -50,6 +50,7 @@ public class GLFWKeyboardImplementation implements KeyboardImplementation {
     }
 
     private void putKeyboardEvent(int keycode, byte state, int ch, long nanos, boolean repeat) {
+        //FIXME buffer should include both keycode and ch
         // if(ch != 0) {
         //     this.tmp_event.clear();
         //     readKeyboard(tmp_event);

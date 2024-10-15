@@ -7,7 +7,8 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
@@ -18,7 +19,6 @@ import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWWindowCloseCallback;
-import org.lwjgl.glfw.GLFWWindowFocusCallback;
 import org.lwjgl.glfw.GLFWWindowPosCallback;
 import org.lwjgl.input.Controllers;
 import org.lwjgl.input.Keyboard;
@@ -71,7 +71,11 @@ public class Display {
             new ExceptionInInitializerError("Unable to initialize GLFW");
         }
         GLFWVidMode vidMode = GLFW.glfwGetVideoMode(GLFW.glfwGetPrimaryMonitor());
-        desktop_mode = new DisplayMode(vidMode.width(), vidMode.height(), vidMode.redBits() + vidMode.greenBits() + vidMode.blueBits(), vidMode.refreshRate());
+        if(vidMode == null) {
+            desktop_mode = null;
+        } else {
+            desktop_mode = new DisplayMode(vidMode.width(), vidMode.height(), vidMode.redBits() + vidMode.greenBits() + vidMode.blueBits(), vidMode.refreshRate());
+        }
         current_mode = desktop_mode;
     }
 
@@ -147,6 +151,9 @@ public class Display {
     public static void create() throws LWJGLException {
         create(new PixelFormat());
     }
+    public static void create(PixelFormat pixelFormat, ContextAttribs attribs) throws LWJGLException {
+        create(pixelFormat);
+    }
 
     public static void create(PixelFormat pixelFormat) throws LWJGLException {
         GLFW.glfwWindowHint(GLFW.GLFW_ACCUM_ALPHA_BITS, pixelFormat.getAccumulationBitsPerPixel());
@@ -206,7 +213,7 @@ public class Display {
         return null;
     }
 
-    public static Canvas parent;
+    private static Canvas parent;
 
     // DO NOT USE. Make sure the game is deAWTed first.
     public static void setParent(Canvas canvas) throws LWJGLException {
@@ -359,14 +366,12 @@ public class Display {
         if(videoModes == null) {
             return new DisplayMode[0];                        
         }
-        HashSet<DisplayMode> modes = new HashSet<DisplayMode>();
+        List<DisplayMode> modes = new ArrayList<DisplayMode>();
         videoModes.iterator().forEachRemaining(mode -> {
             modes.add(new DisplayMode(mode.width(), mode.height(), mode.redBits() + mode.blueBits() + mode.greenBits(), mode.refreshRate()));
         });
-        DisplayMode[] filteredModes = new DisplayMode[videoModes.sizeof()];
-        modes.toArray(filteredModes);
-        
-        return filteredModes;
+        DisplayMode[] filteredModes = new DisplayMode[videoModes.sizeof()];    
+        return modes.toArray(filteredModes);
     }
 
     private static void resizeCallback(long window, int width, int height) {

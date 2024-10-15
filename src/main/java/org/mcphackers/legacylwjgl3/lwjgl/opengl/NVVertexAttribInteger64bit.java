@@ -2,8 +2,6 @@ package org.mcphackers.legacylwjgl3.lwjgl.opengl;
 
 import java.nio.LongBuffer;
 
-import org.lwjgl.system.NativeType;
-
 public class NVVertexAttribInteger64bit {
     public static void glVertexAttribL1NV(int index, LongBuffer v) {
         org.lwjgl.opengl.NVVertexAttribInteger64bit.glVertexAttribL1i64vNV(index, v);

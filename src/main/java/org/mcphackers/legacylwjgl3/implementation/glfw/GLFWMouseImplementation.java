@@ -14,10 +14,10 @@ import java.nio.IntBuffer;
  * @created 28/09/2022 - 8:58 PM
  */
 public class GLFWMouseImplementation implements MouseImplementation {
-    private GLFWMouseButtonCallback buttonCallback;
-    private GLFWCursorPosCallback posCallback;
-    private GLFWScrollCallback scrollCallback;
-    private GLFWCursorEnterCallback cursorEnterCallback;
+    private GLFWMouseButtonCallbackI buttonCallback;
+    private GLFWCursorPosCallbackI posCallback;
+    private GLFWScrollCallbackI scrollCallback;
+    private GLFWCursorEnterCallbackI cursorEnterCallback;
     private long windowHandle;
     private boolean isInsideWindow;
 	private static final int WHEEL_SCALE = 120;
@@ -43,16 +43,15 @@ public class GLFWMouseImplementation implements MouseImplementation {
         if (GLFW.glfwRawMouseMotionSupported() && !Mouse.getPrivilegedBoolean("org.lwjgl.input.Mouse.disableRawInput"))
             GLFW.glfwSetInputMode(this.windowHandle, GLFW.GLFW_RAW_MOUSE_MOTION, GLFW.GLFW_TRUE);
 
-        this.buttonCallback = GLFWMouseButtonCallback.create(
-        new GLFWMouseButtonCallbackI() {
+        this.buttonCallback = new GLFWMouseButtonCallbackI() {
             public void invoke(long window, int button, int action, int mods) {
                 byte state = action == GLFW.GLFW_PRESS ? (byte)1 : (byte)0;
                 putMouseEvent((byte) button, state, 0, System.nanoTime());
                 if (button < button_states.length)
                     button_states[button] = state;
             }
-        });
-        this.posCallback = GLFWCursorPosCallback.create(new GLFWCursorPosCallbackI() {
+        };
+        this.posCallback = new GLFWCursorPosCallbackI() {
             public void invoke(long window, double xpos, double ypos) {
                 if(ignoreNext) {
                     ignoreNext = false;
@@ -82,7 +81,7 @@ public class GLFWMouseImplementation implements MouseImplementation {
                 last_x = x;
                 last_y = y;
             }
-        });
+        };
         this.scrollCallback = GLFWScrollCallback.create((window, xoffset, yoffset) -> {
             accum_dz += yoffset * WHEEL_SCALE;
             putMouseEvent((byte)-1, (byte)0, (int)(yoffset * WHEEL_SCALE), System.nanoTime());
@@ -111,22 +110,10 @@ public class GLFWMouseImplementation implements MouseImplementation {
 
     @Override
     public void destroyMouse() {
-        if(this.buttonCallback != null) {
-            this.buttonCallback.free();
-            this.buttonCallback = null;
-        }
-        if(this.posCallback != null) {
-            this.posCallback.free();
-            this.posCallback = null;
-        }
-        if(this.scrollCallback != null) {
-            this.scrollCallback.free();
-            this.scrollCallback = null;
-        }
-        if(this.cursorEnterCallback != null) {
-            this.cursorEnterCallback.free();
-            this.cursorEnterCallback = null;
-        }
+        this.buttonCallback = null;
+        this.posCallback = null;
+        this.scrollCallback = null;
+        this.cursorEnterCallback = null;
     }
 
     private void reset() {
