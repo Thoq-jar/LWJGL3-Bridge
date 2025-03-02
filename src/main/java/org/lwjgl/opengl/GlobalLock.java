@@ -15,25 +15,10 @@
  */
 package org.lwjgl.opengl;
 
-import org.lwjgl.LWJGLException;
-
 /**
- * @author Spasi
+ * This class contains the global lock that LWJGL will use to synchronize access to Display.
  */
+final class GlobalLock {
 
-/**
- * A Drawable implementation that shares its context with another Drawable. This is useful for background loading of
- * resources. See org.lwjgl.test.opengl.multithread.BackgroundLoad for an example.
- *
- * @author Spasi
- */
-public final class SharedDrawable extends DrawableGL {
-
-    public SharedDrawable(final Drawable drawable) throws LWJGLException {
-        this.context = (ContextGL) ((DrawableLWJGL) drawable).createSharedContext();
-    }
-
-    public ContextGL createSharedContext() {
-        throw new UnsupportedOperationException();
-    }
+    static final Object lock = new Object();
 }

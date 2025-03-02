@@ -35,6 +35,8 @@ public class GLFWMouseImplementation implements MouseImplementation {
     private boolean ignoreFirstMove = true;
     private boolean ignoreNext;
     private byte[] button_states = new byte[this.getButtonCount()];
+    private double[] x_coord = new double[1];
+    private double[] y_coord = new double[1];
 
     @Override
     public void createMouse() {
@@ -57,8 +59,8 @@ public class GLFWMouseImplementation implements MouseImplementation {
                     ignoreNext = false;
                     return;
                 }
-                int x = (int)xpos;
-                int y = transformY((int)ypos);
+                int x = (int)scaledWidth(xpos);
+                int y = transformY((int)scaledHeight(ypos));
                 long nanos = System.nanoTime();
                 if (ignoreFirstMove) {
                     last_x = x;
@@ -93,6 +95,15 @@ public class GLFWMouseImplementation implements MouseImplementation {
         GLFW.glfwSetScrollCallback(this.windowHandle, this.scrollCallback);
         GLFW.glfwSetCursorEnterCallback(this.windowHandle, this.cursorEnterCallback);
     }
+
+    private double scaledWidth(double mouseX) {
+        return grab ? mouseX : mouseX * Display.getWidth() / Display.getWindowWidth();
+    }
+
+    private double scaledHeight(double mouseY) {
+        return grab ? mouseY : mouseY * Display.getHeight() / Display.getWindowHeight();
+    }
+
 
     private void putMouseEvent(byte button, byte state, int dz, long nanos) {
 		if (grab)
@@ -146,9 +157,11 @@ public class GLFWMouseImplementation implements MouseImplementation {
 
     @Override
     public void setCursorPosition(int x, int y) {
-        GLFW.glfwSetCursorPos(this.windowHandle, x, y);
-        this.last_x = x;
-        this.last_y = y;
+        GLFW.glfwSetCursorPos(this.windowHandle, x * Display.getWindowWidth() / Display.getWidth(), y * Display.getWindowHeight() / Display.getHeight());
+        // Implementations (like wayland) may choose to set coordinates somewhere else or ignore
+        GLFW.glfwGetCursorPos(this.windowHandle, x_coord, y_coord);
+        this.last_x = (int)scaledWidth(x_coord[0]);
+        this.last_y = transformY((int)scaledHeight(y_coord[0]));
         ignoreNext = true;
         ignoreFirstMove = true;
     }

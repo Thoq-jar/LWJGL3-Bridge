@@ -217,8 +217,8 @@ public class Mouse {
 //        synchronized (OpenGLPackageAccess.global_lock) {
             if (!isCreated())
                 throw new IllegalStateException("Mouse is not created");
-            x = event_x = new_x;
-            y = event_y = new_y;
+            // x = event_x = new_x;
+            // y = event_y = new_y;
             if (!isGrabbed() /* && (Cursor.getCapabilities() & Cursor.CURSOR_ONE_BIT_TRANSPARENCY) != 0 */) {
                 implementation.setCursorPosition(x, y);
             }

@@ -20,6 +20,7 @@ import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWWindowCloseCallback;
 import org.lwjgl.glfw.GLFWWindowPosCallback;
+import org.lwjgl.glfw.GLFWWindowSizeCallback;
 import org.lwjgl.input.Controllers;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -41,6 +42,10 @@ public class Display {
 
     private static int height = 0;
 
+    private static int frameBufferWidth = 0;
+
+    private static int frameBufferHeight = 0;
+
     private static int x = -1;
 
     private static int y = -1;
@@ -51,7 +56,9 @@ public class Display {
     
     private static boolean window_created;
 
-    private static GLFWFramebufferSizeCallback sizeCallback;
+    private static GLFWFramebufferSizeCallback frameBufferSizeCallback;
+    
+    private static GLFWWindowSizeCallback sizeCallback;
 
     private static GLFWWindowPosCallback moveCallback;
 
@@ -61,6 +68,8 @@ public class Display {
 
     private static IntBuffer buffX = BufferUtils.createIntBuffer(1);
     private static IntBuffer buffY = BufferUtils.createIntBuffer(1);
+    
+    protected static DrawableGL drawable = null;
 
     private Display() {
     }
@@ -171,16 +180,18 @@ public class Display {
         if(handle == MemoryUtil.NULL) {
             throw new LWJGLException("Display could not be created");
         }
-        sizeCallback = GLFWFramebufferSizeCallback.create(Display::resizeCallback);
+        frameBufferSizeCallback = GLFWFramebufferSizeCallback.create(Display::frameBufferResizeCallback);
+        sizeCallback = GLFWWindowSizeCallback.create(Display::resizeCallback);
         moveCallback = GLFWWindowPosCallback.create(Display::moveCallback);
         closeCallback = GLFWWindowCloseCallback.create(Display::closeCallback);
         GLFW.glfwSetWindowCloseCallback(handle, closeCallback);
-        GLFW.glfwSetFramebufferSizeCallback(handle, sizeCallback);
+        GLFW.glfwSetWindowSizeCallback(handle, sizeCallback);
+        GLFW.glfwSetFramebufferSizeCallback(handle, frameBufferSizeCallback);
         GLFW.glfwSetWindowPosCallback(handle, moveCallback);
-        GLFW.glfwSetWindowPosCallback(handle, moveCallback);
+        drawable = new DrawableGL();
         GLFW.glfwMakeContextCurrent(handle);
-        createWindow();
         GL.createCapabilities();
+        createWindow();
     }
 
     public static void closeCallback(long window) {
@@ -208,9 +219,8 @@ public class Display {
         }
     }
 
-    // DO NOT USE. Stub
     public static Drawable getDrawable() {
-        return null;
+        return drawable;
     }
 
     private static Canvas parent;
@@ -257,7 +267,11 @@ public class Display {
     }
 
     public static void setFullscreen(boolean fullscreen) throws LWJGLException {
-        setDisplayModeAndFullscreenInternal(fullscreen, current_mode);
+        if(isFullscreen() == fullscreen) {
+            return;
+        }
+        GLFWVidMode vidMode = GLFW.glfwGetVideoMode(GLFW.glfwGetPrimaryMonitor());
+        setDisplayModeAndFullscreenInternal(fullscreen, new DisplayMode(vidMode.width(), vidMode.height(), vidMode.redBits() + vidMode.greenBits() + vidMode.blueBits(), vidMode.refreshRate()));
     }
     
     public static void setDisplayMode(DisplayMode mode) throws LWJGLException {
@@ -275,7 +289,7 @@ public class Display {
         current_mode = mode;
         boolean was_fullscreen = isFullscreen();
         Display.fullscreen = fullscreen;
-        if ( was_fullscreen != isFullscreen() || !mode.equals(old_mode) ) {
+        if (true || was_fullscreen != isFullscreen() || !mode.equals(old_mode)) {
             if ( !isCreated() )
                 return;
             if(isFullscreen()) {
@@ -290,9 +304,11 @@ public class Display {
                 // TODO 
                 // GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_DECORATED, 0);
                 GLFW.glfwSetWindowMonitor(handle, MemoryUtil.NULL, x, y, current_mode.getWidth(), current_mode.getHeight(), current_mode.getFrequency());
+                GLFW.glfwSetWindowSize(handle, current_mode.getWidth(), current_mode.getHeight());
                 // GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_DECORATED, 1);
             }
         }
+        refreshSizes();
     }
 
     private static void createWindow() throws LWJGLException {
@@ -303,19 +319,8 @@ public class Display {
         GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_RESIZABLE, resizable ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
         window_created = true;
 
-        if(isFullscreen()) {
-            long primaryMonitor = GLFW.glfwGetPrimaryMonitor();
-            GLFW.glfwGetMonitorPos(primaryMonitor, buffX, buffY);
-            GLFW.glfwSetWindowMonitor(handle, primaryMonitor, buffX.get(), buffY.get(), current_mode.getWidth(), current_mode.getHeight(), current_mode.getFrequency());
-            buffX.flip();
-            buffY.flip();
-        } else {
-            // GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_DECORATED, 1);
-            GLFW.glfwSetWindowMonitor(handle, MemoryUtil.NULL, x, y, current_mode.getWidth(), current_mode.getHeight(), current_mode.getFrequency());
-        }
-        
-        width = current_mode.getWidth();
-        height = current_mode.getHeight();
+        setDisplayModeAndFullscreenInternal(isFullscreen(), current_mode);
+
         GLFW.glfwSetWindowPos(handle, getWindowX(), getWindowY());
         // create general callbacks
         initControls();
@@ -364,14 +369,36 @@ public class Display {
         }
         GLFWVidMode.Buffer videoModes = GLFW.glfwGetVideoModes(primaryMonitor);
         if(videoModes == null) {
-            return new DisplayMode[0];                        
+            return new DisplayMode[0];
         }
         List<DisplayMode> modes = new ArrayList<DisplayMode>();
         videoModes.iterator().forEachRemaining(mode -> {
             modes.add(new DisplayMode(mode.width(), mode.height(), mode.redBits() + mode.blueBits() + mode.greenBits(), mode.refreshRate()));
         });
-        DisplayMode[] filteredModes = new DisplayMode[videoModes.sizeof()];    
-        return modes.toArray(filteredModes);
+        return modes.toArray(new DisplayMode[0]);
+    }
+
+    private static void refreshSizes() {
+        GLFW.glfwPollEvents();
+        int[] w = new int[1];
+        int[] h = new int[1];
+        GLFW.glfwGetFramebufferSize(handle, w, h);
+        frameBufferWidth = w[0];
+        frameBufferHeight = h[0];
+        GLFW.glfwGetWindowSize(handle, w, h);
+        width = w[0];
+        height = h[0];
+    }
+
+    private static void frameBufferResizeCallback(long window, int width, int height) {
+        if (window == handle) {
+            window_resized = true;
+            Display.frameBufferWidth = width;
+            Display.frameBufferHeight = height;
+            if(parent != null) {
+                parent.setSize(Display.frameBufferWidth, Display.frameBufferHeight);
+            }
+        }
     }
 
     private static void resizeCallback(long window, int width, int height) {
@@ -380,13 +407,14 @@ public class Display {
             Display.width = width;
             Display.height = height;
             if(parent != null) {
-                parent.setSize(width, height);
+                parent.setSize(Display.width, Display.height);
             }
         }
     }
 
     private static void destroyWindow() {
         GLFW.glfwDestroyWindow(handle);
+        handle = MemoryUtil.NULL;
         if(sizeCallback != null) {
             sizeCallback.free();
             sizeCallback = null;
@@ -414,12 +442,12 @@ public class Display {
         }
         destroyWindow();
         // Terminate GLFW and free the error callback
-        GLFW.glfwTerminate();
-        GLFWErrorCallback callback = GLFW.glfwSetErrorCallback(null);
-        if(callback != null) {
-            callback.free();
-            callback = null;
-        }
+        // GLFW.glfwTerminate();
+        // GLFWErrorCallback callback = GLFW.glfwSetErrorCallback(null);
+        // if(callback != null) {
+        //     callback.free();
+        //     callback = null;
+        // }
     }
 
     public static boolean isCreated() {
@@ -508,12 +536,20 @@ public class Display {
         return y;
     }
     
-    public static int getWidth() {
+    public static int getWindowWidth() {
         return width;
     }
     
-    public static int getHeight() {
+    public static int getWindowHeight() {
         return height;
+    }
+    
+    public static int getWidth() {
+        return frameBufferWidth;
+    }
+    
+    public static int getHeight() {
+        return frameBufferHeight;
     }
 
     public static boolean isFullscreen() {
