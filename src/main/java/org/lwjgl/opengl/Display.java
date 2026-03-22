@@ -136,21 +136,29 @@ public class Display {
         if(!isCreated()) {
             return;
         }
-        window_resized = false;
+
         GLFW.glfwPollEvents();
+
         if(processMessages) {
             if (Mouse.isCreated()) {
                 Mouse.poll();
 //	            Mouse.updateCursor();
             }
+
             if (Keyboard.isCreated()) {
                 Keyboard.poll();
             }
+
             if (Controllers.isCreated()) {
                 Controllers.poll();
             }
         }
+
         swapBuffers();
+
+        // Clear at the end of this frame so the game had the whole frame to read it.
+        // On the next call to update(), a fresh poll will reset it if needed.
+        window_resized = false;
     }
     
     public static void swapBuffers() {
