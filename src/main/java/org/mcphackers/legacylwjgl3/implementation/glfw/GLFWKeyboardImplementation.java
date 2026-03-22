@@ -25,11 +25,21 @@ public class GLFWKeyboardImplementation implements KeyboardImplementation {
     private final EventQueue event_queue = new EventQueue(Keyboard.EVENT_SIZE);
     private final ByteBuffer tmp_event = ByteBuffer.allocate(Keyboard.EVENT_SIZE);
 
+    /**
+     * Holds the Unicode codepoint produced by the most recent character callback.
+     * <p>
+     *   GLFW guarantees that glfwCharCallback fires immediately before glfwKeyCallback for the same key event,
+     *   so this will always be consumed by the very next key callback invocation.
+     * </p>
+     */
+    private int pendingCodepoint = 0;
+
     @Override
     public void createKeyboard() {
         this.charCallback = GLFWCharCallback.create(new GLFWCharCallbackI() {
             public void invoke(long window, int codepoint) {
-                putKeyboardEvent(0, (byte) 1, codepoint, System.nanoTime(), false);
+                pendingCodepoint = codepoint;
+//                putKeyboardEvent(0, (byte) 1, codepoint, System.nanoTime(), false);
             }
         });
 
@@ -41,7 +51,13 @@ public class GLFWKeyboardImplementation implements KeyboardImplementation {
                 } else if (action == GLFW.GLFW_RELEASE) {
                     key_down_buffer[key] = 0;
                 }
-                putKeyboardEvent(key, key_down_buffer[key], 0, System.nanoTime(), action == GLFW.GLFW_REPEAT);
+
+                // Consume the pending codepoint on PRESS events.
+                // REPEAT and RELEASE events don't produce a char callback, so pendingCodepoint will be 0 for them naturally.
+                int ch = pendingCodepoint;
+                pendingCodepoint = 0;
+
+                putKeyboardEvent(key, key_down_buffer[key], ch, System.nanoTime(), action == GLFW.GLFW_REPEAT);
             }
         });
         this.windowHandle = Display.getHandle();
@@ -50,19 +66,6 @@ public class GLFWKeyboardImplementation implements KeyboardImplementation {
     }
 
     private void putKeyboardEvent(int keycode, byte state, int ch, long nanos, boolean repeat) {
-        //FIXME buffer should include both keycode and ch
-        // if(ch != 0) {
-        //     this.tmp_event.clear();
-        //     readKeyboard(tmp_event);
-        //     if(tmp_event.hasRemaining()) {
-        //         int keycode2 = tmp_event.getInt();
-        //         byte state2 = tmp_event.get();
-        //         int ch2 = tmp_event.getInt();
-        //         long nanos2 = tmp_event.getLong();
-        //         int repeat2 = tmp_event.get();
-        //         if()
-        //     }
-        // }
         this.tmp_event.clear();
         this.tmp_event.putInt(keycode).put(state).putInt(ch).putLong(nanos).put(repeat ? (byte)1 : (byte)0);
         this.tmp_event.flip();
