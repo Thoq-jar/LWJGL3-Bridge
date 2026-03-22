@@ -27,7 +27,7 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.system.MemoryUtil;
 
 public class Display {
-    
+
     private static final DisplayMode desktop_mode;
 
     private static String title = "Game";
@@ -53,11 +53,11 @@ public class Display {
     private static boolean fullscreen;
 
     private static boolean window_resized;
-    
+
     private static boolean window_created;
 
     private static GLFWFramebufferSizeCallback frameBufferSizeCallback;
-    
+
     private static GLFWWindowSizeCallback sizeCallback;
 
     private static GLFWWindowPosCallback moveCallback;
@@ -68,12 +68,12 @@ public class Display {
 
     private static IntBuffer buffX = BufferUtils.createIntBuffer(1);
     private static IntBuffer buffY = BufferUtils.createIntBuffer(1);
-    
+
     protected static DrawableGL drawable = null;
 
     private Display() {
     }
-    
+
     static {
         GLFWErrorCallback.createPrint(System.err).set();
         if (GLFW.glfwInit()) {
@@ -143,13 +143,10 @@ public class Display {
         if(processMessages) {
             if (Mouse.isCreated()) {
                 Mouse.poll();
-//	            Mouse.updateCursor();
             }
-
             if (Keyboard.isCreated()) {
                 Keyboard.poll();
             }
-
             if (Controllers.isCreated()) {
                 Controllers.poll();
             }
@@ -157,7 +154,7 @@ public class Display {
 
         swapBuffers();
     }
-    
+
     public static void swapBuffers() {
         GLFW.glfwSwapBuffers(handle);
     }
@@ -261,7 +258,7 @@ public class Display {
         }
         rootParent.setVisible(false);
     }
-    
+
     public static void setLocation(int new_x, int new_y) {
         x = new_x;
         y = new_y;
@@ -278,7 +275,7 @@ public class Display {
         GLFWVidMode vidMode = GLFW.glfwGetVideoMode(GLFW.glfwGetPrimaryMonitor());
         setDisplayModeAndFullscreenInternal(fullscreen, new DisplayMode(vidMode.width(), vidMode.height(), vidMode.redBits() + vidMode.greenBits() + vidMode.blueBits(), vidMode.refreshRate()));
     }
-    
+
     public static void setDisplayMode(DisplayMode mode) throws LWJGLException {
         setDisplayModeAndFullscreen(mode);
     }
@@ -306,7 +303,7 @@ public class Display {
             } else {
                 // For some reason with GLFW_DECORATED size is combined with window decoration size (it also fires 3 resize callbacks)
                 // Also, the workaround loses focus and doesn't always work
-                // TODO 
+                // TODO
                 // GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_DECORATED, 0);
                 GLFW.glfwSetWindowMonitor(handle, MemoryUtil.NULL, x, y, current_mode.getWidth(), current_mode.getHeight(), current_mode.getFrequency());
                 GLFW.glfwSetWindowSize(handle, current_mode.getWidth(), current_mode.getHeight());
@@ -384,7 +381,6 @@ public class Display {
     }
 
     private static void refreshSizes() {
-        GLFW.glfwPollEvents();
         int[] w = new int[1];
         int[] h = new int[1];
         GLFW.glfwGetFramebufferSize(handle, w, h);
@@ -393,6 +389,7 @@ public class Display {
         GLFW.glfwGetWindowSize(handle, w, h);
         width = w[0];
         height = h[0];
+        window_resized = true;
     }
 
     private static void frameBufferResizeCallback(long window, int width, int height) {
@@ -446,7 +443,6 @@ public class Display {
             Keyboard.destroy();
         }
         destroyWindow();
-        // Terminate GLFW and free the error callback
         // GLFW.glfwTerminate();
         // GLFWErrorCallback callback = GLFW.glfwSetErrorCallback(null);
         // if(callback != null) {
@@ -504,7 +500,6 @@ public class Display {
 
     private static int getWindowX() {
         if ( !isFullscreen() ) {
-            // if no display location set, center window
             if ( x == -1 ) {
                 return Math.max(0, (desktop_mode.getWidth() - current_mode.getWidth()) / 2);
             } else {
@@ -517,7 +512,6 @@ public class Display {
 
     private static int getWindowY() {
         if ( !isFullscreen() ) {
-            // if no display location set, center window
             if ( y == -1 ) {
                 return Math.max(0, (desktop_mode.getHeight() - current_mode.getHeight()) / 2);
             } else {
@@ -527,6 +521,7 @@ public class Display {
             return 0;
         }
     }
+
     public static int getX() {
         if (isFullscreen()) {
             return 0;
@@ -540,19 +535,19 @@ public class Display {
         }
         return y;
     }
-    
+
     public static int getWindowWidth() {
         return width;
     }
-    
+
     public static int getWindowHeight() {
         return height;
     }
-    
+
     public static int getWidth() {
         return frameBufferWidth;
     }
-    
+
     public static int getHeight() {
         return frameBufferHeight;
     }
@@ -564,7 +559,7 @@ public class Display {
     public static boolean wasResized() {
         return window_resized;
     }
-    
+
     public static long getHandle() {
         return handle;
     }
