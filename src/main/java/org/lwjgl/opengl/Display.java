@@ -137,6 +137,7 @@ public class Display {
             return;
         }
 
+        window_resized = false;
         GLFW.glfwPollEvents();
 
         if(processMessages) {
@@ -155,10 +156,6 @@ public class Display {
         }
 
         swapBuffers();
-
-        // Clear at the end of this frame so the game had the whole frame to read it.
-        // On the next call to update(), a fresh poll will reset it if needed.
-        window_resized = false;
     }
     
     public static void swapBuffers() {
@@ -387,7 +384,7 @@ public class Display {
     }
 
     private static void refreshSizes() {
-//        GLFW.glfwPollEvents();
+        GLFW.glfwPollEvents();
         int[] w = new int[1];
         int[] h = new int[1];
         GLFW.glfwGetFramebufferSize(handle, w, h);
@@ -396,10 +393,6 @@ public class Display {
         GLFW.glfwGetWindowSize(handle, w, h);
         width = w[0];
         height = h[0];
-
-        // Signal a resize so the game updates its viewport on the next frame, even if the framebuffer callback doesn't fire.
-        // (which can happen on some platforms when switching to the same resolution).
-        window_resized = true;
     }
 
     private static void frameBufferResizeCallback(long window, int width, int height) {
