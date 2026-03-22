@@ -25,44 +25,64 @@ public class GLFWKeyboardImplementation implements KeyboardImplementation {
     private final EventQueue event_queue = new EventQueue(Keyboard.EVENT_SIZE);
     private final ByteBuffer tmp_event = ByteBuffer.allocate(Keyboard.EVENT_SIZE);
 
-    /**
-     * Holds the Unicode codepoint produced by the most recent character callback.
-     * <p>
-     *   GLFW guarantees that glfwCharCallback fires immediately before glfwKeyCallback for the same key event,
-     *   so this will always be consumed by the very next key callback invocation.
-     * </p>
-     */
-    private int pendingCodepoint = 0;
+
+    private int pendingCodepoint = 0; // Consumed on flush.
+
+    private boolean hasPendingEvent  = false;
+    private int pendingKey = 0;
+    private byte pendingState = 0;
+    private long pendingNanos = 0;
+    private boolean pendingRepeat = false;
 
     @Override
     public void createKeyboard() {
         this.charCallback = GLFWCharCallback.create(new GLFWCharCallbackI() {
             public void invoke(long window, int codepoint) {
                 pendingCodepoint = codepoint;
+                flushPendingEvent();
 //                putKeyboardEvent(0, (byte) 1, codepoint, System.nanoTime(), false);
             }
         });
 
         this.keyCallback = GLFWKeyCallback.create(new GLFWKeyCallbackI() {
             public void invoke(long window, int glfwKey, int scancode, int action, int mods) {
+                flushPendingEvent();
+
                 int key = translateKeyFromGLFW(glfwKey);
+
                 if (action == GLFW.GLFW_PRESS) {
                     key_down_buffer[key] = 1;
                 } else if (action == GLFW.GLFW_RELEASE) {
                     key_down_buffer[key] = 0;
                 }
 
-                // Consume the pending codepoint on PRESS events.
-                // REPEAT and RELEASE events don't produce a char callback, so pendingCodepoint will be 0 for them naturally.
-                int ch = pendingCodepoint;
+                // Buffer this event. The char callback may fire next with a codepoint.
+                hasPendingEvent  = true;
+                pendingKey       = key;
+                pendingState     = key_down_buffer[key];
+                pendingNanos     = System.nanoTime();
+                pendingRepeat    = (action == GLFW.GLFW_REPEAT);
                 pendingCodepoint = 0;
-
-                putKeyboardEvent(key, key_down_buffer[key], ch, System.nanoTime(), action == GLFW.GLFW_REPEAT);
             }
         });
+
         this.windowHandle = Display.getHandle();
         GLFW.glfwSetCharCallback(this.windowHandle, this.charCallback);
         GLFW.glfwSetKeyCallback(this.windowHandle, this.keyCallback);
+    }
+
+    /**
+     * Emits the pending event (if any) into the queue and clears pending state.
+     * Safe to call when {@code hasPendingEvent} is false.
+     */
+    private void flushPendingEvent() {
+        if(!this.hasPendingEvent) return;
+        this.putKeyboardEvent(this.pendingKey, this.pendingState, this.pendingCodepoint, this.pendingNanos, this.pendingRepeat);
+
+        this.hasPendingEvent = this.pendingRepeat = false;
+        this.pendingKey = this.pendingCodepoint = 0;
+        this.pendingState = 0;
+        this.pendingNanos = 0;
     }
 
     private void putKeyboardEvent(int keycode, byte state, int ch, long nanos, boolean repeat) {
@@ -94,7 +114,8 @@ public class GLFWKeyboardImplementation implements KeyboardImplementation {
 
     @Override
     public void readKeyboard(ByteBuffer readBuffer) {
-        event_queue.copyEvents(readBuffer);
+        this.flushPendingEvent();
+        this.event_queue.copyEvents(readBuffer);
     }
 
     public static int translateKeyFromGLFW(int key) {
