@@ -1,5 +1,7 @@
 # legacy-lwjgl3
 
+[![](https://jitpack.io/v/RareHyperIonYT/LWJGL3-Bridge.svg)](https://jitpack.io/#RareHyperIonYT/LWJGL3-Bridge)
+
 A hacky over-engineered project that creates a bridge between legacy LWJGL2 API and LWJGL3
 Allowing you to use modern LWJGL features and libraries on older Minecraft versions.
 
