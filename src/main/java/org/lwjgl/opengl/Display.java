@@ -1,30 +1,21 @@
 package org.lwjgl.opengl;
 
-import java.awt.Canvas;
-import java.awt.Container;
-import java.awt.Frame;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.LWJGLException;
+import org.lwjgl.LWJGLUtil;
+import org.lwjgl.glfw.*;
+import org.lwjgl.input.Controllers;
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
+import org.lwjgl.system.MemoryUtil;
+
+import java.awt.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.lwjgl.BufferUtils;
-import org.lwjgl.LWJGLException;
-import org.lwjgl.LWJGLUtil;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
-import org.lwjgl.glfw.GLFWImage;
-import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.glfw.GLFWWindowCloseCallback;
-import org.lwjgl.glfw.GLFWWindowPosCallback;
-import org.lwjgl.glfw.GLFWWindowSizeCallback;
-import org.lwjgl.input.Controllers;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.system.MemoryUtil;
 
 public class Display {
 
@@ -76,7 +67,7 @@ public class Display {
 
     static {
         GLFWErrorCallback.createPrint(System.err).set();
-        if (GLFW.glfwInit()) {
+        if(GLFW.glfwInit()) {
             new ExceptionInInitializerError("Unable to initialize GLFW");
         }
         GLFWVidMode vidMode = GLFW.glfwGetVideoMode(GLFW.glfwGetPrimaryMonitor());
@@ -89,13 +80,13 @@ public class Display {
     }
 
     public static DisplayMode getDisplayMode() {
-         return current_mode;
+        return current_mode;
     }
 
     public static int setIcon(ByteBuffer[] icons) {
-        if ( cached_icons != icons ) {
+        if(cached_icons != icons) {
             cached_icons = new ByteBuffer[icons.length];
-            for ( int i = 0; i < icons.length; i++ ) {
+            for(int i = 0; i < icons.length; i++) {
                 cached_icons[i] = BufferUtils.createByteBuffer(icons[i].capacity());
                 int old_position = icons[i].position();
                 cached_icons[i].put(icons[i]);
@@ -104,7 +95,7 @@ public class Display {
             }
         }
 
-        if (isCreated()) {
+        if(isCreated()) {
             GLFW.glfwSetWindowIcon(handle, iconsToGLFWBuffer(cached_icons));
             return 1;
         } else {
@@ -116,11 +107,11 @@ public class Display {
         return desktop_mode;
     }
 
-    private static GLFWImage.Buffer iconsToGLFWBuffer(ByteBuffer[] icons)  {
+    private static GLFWImage.Buffer iconsToGLFWBuffer(ByteBuffer[] icons) {
         GLFWImage.Buffer buffer = GLFWImage.create(icons.length);
         for(ByteBuffer icon : icons) {
             int size = icon.limit() / 4;
-            int dimension = (int)Math.sqrt(size);
+            int dimension = (int) Math.sqrt(size);
             GLFWImage image = GLFWImage.malloc();
             buffer.put(image.set(dimension, dimension, icon));
         }
@@ -141,13 +132,13 @@ public class Display {
         GLFW.glfwPollEvents();
 
         if(processMessages) {
-            if (Mouse.isCreated()) {
+            if(Mouse.isCreated()) {
                 Mouse.poll();
             }
-            if (Keyboard.isCreated()) {
+            if(Keyboard.isCreated()) {
                 Keyboard.poll();
             }
-            if (Controllers.isCreated()) {
+            if(Controllers.isCreated()) {
                 Controllers.poll();
             }
         }
@@ -162,6 +153,7 @@ public class Display {
     public static void create() throws LWJGLException {
         create(new PixelFormat());
     }
+
     public static void create(PixelFormat pixelFormat, ContextAttribs attribs) throws LWJGLException {
         create(pixelFormat);
     }
@@ -174,6 +166,7 @@ public class Display {
         GLFW.glfwWindowHint(GLFW.GLFW_SAMPLES, pixelFormat.getSamples());
         GLFW.glfwWindowHint(GLFW.GLFW_STENCIL_BITS, pixelFormat.getStencilBits());
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, Display.resizable ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
+        GLFW.glfwWindowHint(GLFW.GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW.GLFW_FALSE);
         long monitor = MemoryUtil.NULL;
         if(current_mode.isFullscreenCapable()) {
             monitor = GLFW.glfwGetPrimaryMonitor();
@@ -197,7 +190,7 @@ public class Display {
     }
 
     public static void closeCallback(long window) {
-        if (window == handle && parent != null) {
+        if(window == handle && parent != null) {
             Container rootParent = parent.getParent();
             if(rootParent == null) { // Unexpected
                 return;
@@ -206,7 +199,7 @@ public class Display {
                 rootParent = rootParent.getParent();
             }
             if(rootParent instanceof Frame) {
-                Frame f = (Frame)rootParent;
+                Frame f = (Frame) rootParent;
                 f.dispose();
             }
         }
@@ -215,7 +208,7 @@ public class Display {
     public static void moveCallback(long window, int x, int y) {
         if(isFullscreen())
             return;
-        if (window == handle) {
+        if(window == handle) {
             Display.x = x;
             Display.y = y;
         }
@@ -263,7 +256,7 @@ public class Display {
         x = new_x;
         y = new_y;
 
-        if ( isCreated() && !isFullscreen() ) {
+        if(isCreated() && !isFullscreen()) {
             GLFW.glfwSetWindowPos(handle, x, y);
         }
     }
@@ -285,14 +278,14 @@ public class Display {
     }
 
     private static void setDisplayModeAndFullscreenInternal(boolean fullscreen, DisplayMode mode) throws LWJGLException {
-        if ( mode == null )
+        if(mode == null)
             throw new NullPointerException("mode must be non-null");
         DisplayMode old_mode = current_mode;
         current_mode = mode;
         boolean was_fullscreen = isFullscreen();
         Display.fullscreen = fullscreen;
-        if (true || was_fullscreen != isFullscreen() || !mode.equals(old_mode)) {
-            if ( !isCreated() )
+        if(true || was_fullscreen != isFullscreen() || !mode.equals(old_mode)) {
+            if(!isCreated())
                 return;
             if(isFullscreen()) {
                 long primaryMonitor = GLFW.glfwGetPrimaryMonitor();
@@ -314,7 +307,7 @@ public class Display {
     }
 
     private static void createWindow() throws LWJGLException {
-        if ( isCreated() ) {
+        if(isCreated()) {
             return;
         }
         // Configure GLFW
@@ -328,13 +321,15 @@ public class Display {
         initControls();
 
         // set cached window icon if exists
-        if ( cached_icons != null ) {
+        if(cached_icons != null) {
             setIcon(cached_icons);
         } else {
-            setIcon(new ByteBuffer[] { LWJGLUtil.LWJGLIcon32x32, LWJGLUtil.LWJGLIcon16x16 });
+            setIcon(new ByteBuffer[]{LWJGLUtil.LWJGLIcon32x32, LWJGLUtil.LWJGLIcon16x16});
         }
         GLFW.glfwShowWindow(handle);
         GLFW.glfwFocusWindow(handle);
+        // refresh size to fix macOS Retina/HiDPI framebuffer sizign
+        refreshSizes();
     }
 
     static boolean getPrivilegedBoolean(final String property_name) {
@@ -346,18 +341,18 @@ public class Display {
     }
 
     private static void initControls() {
-        if ( !getPrivilegedBoolean("org.lwjgl.opengl.Display.noinput") ) {
-            if ( !Mouse.isCreated() && !getPrivilegedBoolean("org.lwjgl.opengl.Display.nomouse") ) {
+        if(!getPrivilegedBoolean("org.lwjgl.opengl.Display.noinput")) {
+            if(!Mouse.isCreated() && !getPrivilegedBoolean("org.lwjgl.opengl.Display.nomouse")) {
                 try {
                     Mouse.create();
-                } catch (LWJGLException e) {
+                } catch(LWJGLException e) {
                     e.printStackTrace(System.err);
                 }
             }
-            if ( !Keyboard.isCreated() && !getPrivilegedBoolean("org.lwjgl.opengl.Display.nokeyboard") ) {
+            if(!Keyboard.isCreated() && !getPrivilegedBoolean("org.lwjgl.opengl.Display.nokeyboard")) {
                 try {
                     Keyboard.create();
-                } catch (LWJGLException e) {
+                } catch(LWJGLException e) {
                     e.printStackTrace(System.err);
                 }
             }
@@ -366,7 +361,7 @@ public class Display {
 
     public static DisplayMode[] getAvailableDisplayModes() {
         long primaryMonitor = GLFW.glfwGetPrimaryMonitor();
-        if (primaryMonitor == MemoryUtil.NULL) {
+        if(primaryMonitor == MemoryUtil.NULL) {
             return new DisplayMode[0];
         }
         GLFWVidMode.Buffer videoModes = GLFW.glfwGetVideoModes(primaryMonitor);
@@ -393,7 +388,7 @@ public class Display {
     }
 
     private static void frameBufferResizeCallback(long window, int width, int height) {
-        if (window == handle) {
+        if(window == handle) {
             window_resized = true;
             Display.frameBufferWidth = width;
             Display.frameBufferHeight = height;
@@ -404,7 +399,7 @@ public class Display {
     }
 
     private static void resizeCallback(long window, int width, int height) {
-        if (window == handle) {
+        if(window == handle) {
             window_resized = true;
             Display.width = width;
             Display.height = height;
@@ -433,13 +428,13 @@ public class Display {
     }
 
     public static void destroy() {
-        if ( !isCreated()) {
+        if(!isCreated()) {
             return;
         }
-        if ( Mouse.isCreated() ) {
+        if(Mouse.isCreated()) {
             Mouse.destroy();
         }
-        if ( Keyboard.isCreated() ) {
+        if(Keyboard.isCreated()) {
             Keyboard.destroy();
         }
         destroyWindow();
@@ -469,7 +464,7 @@ public class Display {
 
     public static void setResizable(boolean isResizable) {
         resizable = isResizable;
-        if (isCreated()) {
+        if(isCreated()) {
             GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_RESIZABLE, resizable ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
         }
     }
@@ -483,11 +478,11 @@ public class Display {
     }
 
     public static void setTitle(String newTitle) {
-        if ( newTitle == null ) {
+        if(newTitle == null) {
             newTitle = "";
         }
         title = newTitle;
-        if ( isCreated() )
+        if(isCreated())
             GLFW.glfwSetWindowTitle(handle, title);
     }
 
@@ -499,8 +494,8 @@ public class Display {
     }
 
     private static int getWindowX() {
-        if ( !isFullscreen() ) {
-            if ( x == -1 ) {
+        if(!isFullscreen()) {
+            if(x == -1) {
                 return Math.max(0, (desktop_mode.getWidth() - current_mode.getWidth()) / 2);
             } else {
                 return x;
@@ -511,8 +506,8 @@ public class Display {
     }
 
     private static int getWindowY() {
-        if ( !isFullscreen() ) {
-            if ( y == -1 ) {
+        if(!isFullscreen()) {
+            if(y == -1) {
                 return Math.max(0, (desktop_mode.getHeight() - current_mode.getHeight()) / 2);
             } else {
                 return y;
@@ -523,14 +518,14 @@ public class Display {
     }
 
     public static int getX() {
-        if (isFullscreen()) {
+        if(isFullscreen()) {
             return 0;
         }
         return x;
     }
 
     public static int getY() {
-        if (isFullscreen()) {
+        if(isFullscreen()) {
             return 0;
         }
         return y;
@@ -545,11 +540,11 @@ public class Display {
     }
 
     public static int getWidth() {
-        return frameBufferWidth;
+        return width;
     }
 
     public static int getHeight() {
-        return frameBufferHeight;
+        return height;
     }
 
     public static boolean isFullscreen() {
