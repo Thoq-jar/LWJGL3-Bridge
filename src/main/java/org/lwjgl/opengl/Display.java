@@ -96,7 +96,9 @@ public class Display {
         }
 
         if(isCreated()) {
-            GLFW.glfwSetWindowIcon(handle, iconsToGLFWBuffer(cached_icons));
+            if (!System.getProperty("os.name").toLowerCase().contains("mac")) {
+                GLFW.glfwSetWindowIcon(handle, iconsToGLFWBuffer(cached_icons));
+            }
             return 1;
         } else {
             return 0;
